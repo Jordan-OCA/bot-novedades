@@ -1,3 +1,16 @@
-# Ignorar entorno virtual
+# Entornos virtuales
 venv/
 env/
+
+# Archivos de Excel
+*.xlsx
+*.xls
+~$*.xls*
+
+# Archivos pickle
+*.pkl
+
+# Archivos temporales / logs
+*.log
+*.tmp
+*.bak
