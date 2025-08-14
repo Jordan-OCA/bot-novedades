@@ -1,5 +1,5 @@
-def main():
-    print("Bot Novedades iniciado...")
+# main.py
+from bot.interfaz import iniciar_interfaz
 
 if __name__ == "__main__":
-    main()
+    iniciar_interfaz()
