@@ -73,7 +73,7 @@ def abrir_pagina_y_login(browser, user_agent, max_intentos=3):
 def procesar_cliente(cliente: str, max_reintentos_cliente=3):
     """Procesa un cliente y extrae la información de medidor con reintentos."""
     with sync_playwright() as p:
-        browser = p.chromium.launch(headless=True)
+        browser = p.chromium.launch(headless=False)
 
         intento_cliente = 0
         while intento_cliente < max_reintentos_cliente:
