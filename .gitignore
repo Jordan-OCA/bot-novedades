@@ -14,3 +14,22 @@ env/
 *.log
 *.tmp
 *.bak
+
+# Compilados de Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Archivos de sistema
+.DS_Store
+Thumbs.db
+
+# Archivos de paquetes / binarios
+*.deb
+*.tar
+*.gz
+*.zip
+*.egg-info/
+dist/
+build/

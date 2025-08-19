@@ -4,6 +4,7 @@
 import customtkinter as ctk
 from tkinter import filedialog, ttk
 from bot.data_processing import process_excel
+from bot.make_df_xlx import generar_df_final, exportar_a_excel
 from PIL import Image
 import pickle
 import pandas as pd
@@ -86,15 +87,14 @@ def procesar_bot():
 def descargar_excel():
     try:
         print("⏳ Exportando archivo Excel...")
-        with open("processed_data.pkl", "rb") as f:
-            df = pickle.load(f)
+        df_final = generar_df_final()  # Une los pickles automáticamente
+
         output_path = filedialog.asksaveasfilename(
             defaultextension=".xlsx",
             filetypes=[("Archivos Excel", "*.xlsx")]
         )
         if output_path:
-            df.to_excel(output_path, index=False)
-            print(f"✅ Archivo exportado: {output_path}")
+            exportar_a_excel(df_final, output_path)
         else:
             print("⚠ Exportación cancelada por el usuario.")
     except Exception as e:
