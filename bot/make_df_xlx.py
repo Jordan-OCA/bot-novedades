@@ -3,10 +3,19 @@ import pandas as pd
 import pickle
 import os
 
+COLUMNAS_PENDIENTES = [
+    "medidor extraido opera",
+    "marca de medidor extraido",
+    "modelo medidor extraido",
+    "validacion medidor"
+]
+
 def generar_df_final(processed_pickle="processed_data.pkl",
-                     resultados_pickle="medidores_resultados.pkl") -> pd.DataFrame:
+                     resultados_pickle="medidores_resultados.pkl",
+                     key="cliente") -> pd.DataFrame:
     """
-    Concatena processed_data.pkl con medidores_resultados.pkl horizontalmente.
+    Genera el DataFrame final combinando processed_data y medidores_resultados
+    usando merge por 'cliente' y rellenando solo las columnas pendientes.
     """
     if not os.path.exists(processed_pickle):
         raise FileNotFoundError(f"No se encontró '{processed_pickle}'")
@@ -19,19 +28,27 @@ def generar_df_final(processed_pickle="processed_data.pkl",
     with open(resultados_pickle, "rb") as f:
         df_resultados = pickle.load(f)
 
-    # Asegurar que tengan el mismo número de filas
-    if len(df_original) != len(df_resultados):
-        print("⚠️ Atención: los DataFrames tienen diferente número de filas. Se alinearán por posición.")
+    # Asegurar que 'cliente' tenga mismo tipo
+    df_resultados[key] = df_resultados[key].astype(df_original[key].dtype)
 
-    # Concatenar horizontalmente
-    df_final = pd.concat([df_original.reset_index(drop=True), df_resultados.reset_index(drop=True)], axis=1)
+    # Hacer merge por cliente
+    df_merged = df_original.merge(df_resultados, on=key, how="left", suffixes=("", "_res"))
 
-    return df_final
+    # Actualizar solo las columnas pendientes si hay datos en df_resultados
+    for col in COLUMNAS_PENDIENTES:
+        col_res = f"{col}_res"
+        if col_res in df_merged.columns:
+            df_merged[col] = df_merged[col_res].combine_first(df_merged[col])
+            df_merged.drop(columns=[col_res], inplace=True)
 
+    return df_merged
 
 def exportar_a_excel(df: pd.DataFrame, output_path: str):
-    """
-    Exporta un DataFrame a Excel.
-    """
+    """Exporta el DataFrame a Excel."""
     df.to_excel(output_path, index=False)
     print(f"✅ Archivo exportado: {output_path}")
+
+
+if __name__ == "__main__":
+    df_final = generar_df_final()
+    exportar_a_excel(df_final, "final_resultados.xlsx")

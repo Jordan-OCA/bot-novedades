@@ -7,25 +7,11 @@ from bot.data_processing import process_excel
 from bot.make_df_xlx import generar_df_final, exportar_a_excel
 from PIL import Image
 import pickle
-import pandas as pd
 import subprocess
-import os
-import platform
 import sys
-
-# Selección automática de fuente para emojis
-if platform.system() == "Windows":
-    EMOJI_FONT = "Segoe UI Emoji"
-elif platform.system() == "Linux":
-    EMOJI_FONT = "Noto Color Emoji"
-elif platform.system() == "Darwin":  # MacOS
-    EMOJI_FONT = "Apple Color Emoji"
-else:
-    EMOJI_FONT = "Arial"  # fallback
 
 ctk.set_appearance_mode("dark")
 ctk.set_default_color_theme("blue")
-
 
 # --- Clase para redirigir print al log ---
 class RedirectLogger:
@@ -42,7 +28,6 @@ class RedirectLogger:
     def flush(self):
         pass
 
-
 def open_file(tree):
     filepath = filedialog.askopenfilename(
         title="Seleccionar plantilla Excel",
@@ -51,7 +36,6 @@ def open_file(tree):
     if filepath:
         process_excel(filepath)
         actualizar_resumen(tree)
-
 
 def actualizar_resumen(tree):
     try:
@@ -74,15 +58,22 @@ def actualizar_resumen(tree):
     except Exception as e:
         print(f"❌ No se pudo actualizar el resumen: {e}")
 
-
-def procesar_bot():
+def procesar_bot(progress):
     try:
-        print("⏳ Procesando bot...")
-        subprocess.run(["python", "bot/opera_client.py"], check=True)
-        print("✅ Bot procesado correctamente.")
-    except Exception as e:
-        print(f"❌ Error al procesar el bot: {e}")
+        print("⏳ Bot en ejecución...")
+        progress.start()  # Inicia animación de la barra
 
+        # Ejecutar el bot (sin capturar logs en tiempo real)
+        subprocess.run(["python", "bot/opera_client.py"], check=True)
+
+        print("✅ Bot finalizó correctamente.")
+
+    except subprocess.CalledProcessError:
+        print("❌ Hubo un error ejecutando el bot.")
+
+    finally:
+        progress.stop()  # Detener animación
+        print("🛑 Proceso de bot detenido.")
 
 def descargar_excel():
     try:
@@ -99,7 +90,6 @@ def descargar_excel():
             print("⚠ Exportación cancelada por el usuario.")
     except Exception as e:
         print(f"❌ No se pudo exportar el archivo: {e}")
-
 
 def iniciar_interfaz():
     app = ctk.CTk()
@@ -120,52 +110,23 @@ def iniciar_interfaz():
         logo_label = ctk.CTkLabel(app, text="Procesador Excel", font=("Arial", 20, "bold"))
         logo_label.grid(row=0, column=0, sticky="w", padx=10, pady=10)
 
-    # Frame izquierdo (Botones + Log)
+    # Frame izquierdo (Botones + Log + Progress)
     left_frame = ctk.CTkFrame(app, corner_radius=10)
     left_frame.grid(row=1, column=0, sticky="ns", padx=10, pady=10)
-    left_frame.grid_rowconfigure(5, weight=1)  # Para que el log crezca
+    left_frame.grid_rowconfigure(6, weight=1)  # Para que el log crezca
 
     title_label = ctk.CTkLabel(left_frame, text="Opciones", font=("Arial", 20))
     title_label.grid(row=0, column=0, pady=15, padx=10)
 
-    btn_excel = ctk.CTkButton(
-        left_frame, text="🗄 Seleccionar Excel",
-        fg_color="#e74c3c", hover_color="#c0392b",
-        font=(EMOJI_FONT, 14),
-        command=lambda: open_file(tree)
-    )
-    btn_excel.grid(row=1, column=0, pady=8, padx=10, sticky="ew")
-
-    btn_refresh = ctk.CTkButton(
-        left_frame, text="⟳ Actualizar resumen",
-        font=(EMOJI_FONT, 14),
-        command=lambda: actualizar_resumen(tree)
-    )
-    btn_refresh.grid(row=2, column=0, pady=8, padx=10, sticky="ew")
-
-    btn_procesar = ctk.CTkButton(
-        left_frame, text="🦖 Procesar Bot",
-        fg_color="#2ecc71", hover_color="#27ae60",
-        font=(EMOJI_FONT, 14),
-        command=procesar_bot
-    )
-    btn_procesar.grid(row=3, column=0, pady=8, padx=10, sticky="ew")
-
-    btn_descargar = ctk.CTkButton(
-        left_frame, text="💾 Descargar Excel",
-        fg_color="#3498db", hover_color="#2980b9",
-        font=(EMOJI_FONT, 14),
-        command=descargar_excel
-    )
-    btn_descargar.grid(row=4, column=0, pady=8, padx=10, sticky="ew")
-
     # Panel de log
     log_box = ctk.CTkTextbox(left_frame, height=8, state="disabled", font=("Consolas", 12))
-    log_box.grid(row=5, column=0, padx=10, pady=(15, 5), sticky="nsew")
-
-    # Redirigir print() al log y consola
+    log_box.grid(row=6, column=0, padx=10, pady=(15, 5), sticky="nsew")
     sys.stdout = RedirectLogger(log_box)
     sys.stderr = RedirectLogger(log_box)
+
+    # Barra de progreso
+    progress = ctk.CTkProgressBar(left_frame, mode="indeterminate")
+    progress.grid(row=7, column=0, pady=10, padx=10, sticky="ew")
 
     # Frame derecho (Tabla)
     right_frame = ctk.CTkFrame(app, corner_radius=10)
@@ -174,6 +135,7 @@ def iniciar_interfaz():
     summary_label = ctk.CTkLabel(right_frame, text="Resumen de datos", font=("Arial", 18))
     summary_label.pack(pady=10)
 
+    # Treeview único
     tree = ttk.Treeview(right_frame)
     tree.pack(fill="both", expand=True)
 
@@ -184,6 +146,38 @@ def iniciar_interfaz():
     hsb = ttk.Scrollbar(right_frame, orient="horizontal", command=tree.xview)
     hsb.pack(side="bottom", fill="x")
     tree.configure(xscrollcommand=hsb.set)
+
+    # Botones
+    btn_excel = ctk.CTkButton(
+        left_frame, text="🗄 Seleccionar Excel",
+        fg_color="#e74c3c", hover_color="#c0392b",
+        font=("Segoe UI Emoji", 14),
+        command=lambda: open_file(tree)
+    )
+    btn_excel.grid(row=1, column=0, pady=8, padx=10, sticky="ew")
+
+    btn_refresh = ctk.CTkButton(
+        left_frame, text="⟳ Actualizar resumen",
+        font=("Segoe UI Emoji", 14),
+        command=lambda: actualizar_resumen(tree)
+    )
+    btn_refresh.grid(row=2, column=0, pady=8, padx=10, sticky="ew")
+
+    btn_procesar = ctk.CTkButton(
+        left_frame, text="🦖 Procesar Bot",
+        fg_color="#2ecc71", hover_color="#27ae60",
+        font=("Segoe UI Emoji", 14),
+        command=lambda: procesar_bot(progress)
+    )
+    btn_procesar.grid(row=3, column=0, pady=8, padx=10, sticky="ew")
+
+    btn_descargar = ctk.CTkButton(
+        left_frame, text="💾 Descargar Excel",
+        fg_color="#3498db", hover_color="#2980b9",
+        font=("Segoe UI Emoji", 14),
+        command=descargar_excel
+    )
+    btn_descargar.grid(row=4, column=0, pady=8, padx=10, sticky="ew")
 
     app.mainloop()
 
