@@ -1,5 +1,5 @@
 # main.py
-from bot.interfaz import iniciar_interfaz
+from bot.interfaz_online import iniciar_interfaz
 
 if __name__ == "__main__":
     iniciar_interfaz()

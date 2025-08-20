@@ -73,7 +73,7 @@ def abrir_pagina_y_login(browser, user_agent, max_intentos=3):
 def procesar_cliente(cliente: str, max_reintentos_cliente=3):
     """Procesa un cliente y extrae la información de medidor con reintentos."""
     with sync_playwright() as p:
-        browser = p.chromium.launch(headless=False)
+        browser = p.chromium.launch(headless=True)
 
         intento_cliente = 0
         while intento_cliente < max_reintentos_cliente:
@@ -159,9 +159,11 @@ def procesar_clientes(lista_clientes):
     df_original = pd.read_pickle("processed_data.pkl")[["cliente"]].copy()
     try:
         df_resultados["cliente"] = df_resultados["cliente"].astype(df_original["cliente"].dtype)
+        print("✅ Tipos de datos de cliente coinciden entre DataFrames.")
     except Exception:
         df_original["cliente"] = df_original["cliente"].astype(str)
         df_resultados["cliente"] = df_resultados["cliente"].astype(str)
+        print("⚠️ Tipos de datos de cliente no coinciden, convertidos a str.")
 
     df_final = df_original.merge(df_resultados, on="cliente", how="left")
     df_final.to_excel("final_resultados.xlsx", index=False)
